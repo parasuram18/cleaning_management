@@ -1,9 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.fields import JSONField
+
 
 class IuMaster(models.Model):
     company_name = models.CharField(max_length=50, blank=True, null=True)
     domain_name = models.CharField(max_length=50, blank=True, null=True)
+    is_active = models.BooleanField(default=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     created_by = models.IntegerField(blank=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -13,11 +16,12 @@ class IuMaster(models.Model):
         db_table = 'iu_master'
 
 class IuMasterProfile(models.Model):
-    iu_master = models.ForeignKey(IuMaster, related_name='Iudetails', on_delete=models.CASCADE)
-    address = models.CharField(max_length=50, blank=True, null=True)
+    iu_master = models.OneToOneField(IuMaster, related_name='Iudetails', on_delete=models.CASCADE)
+    address = JSONField(default=dict, blank=True)
     phone = models.CharField(max_length=15)
     gst_number = models.CharField(max_length=50)
     registration_date = models.DateField(blank=True, null=True)
+    is_active = models.BooleanField(default=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     created_by = models.IntegerField(blank=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -30,15 +34,16 @@ class RoleMaster(models.Model):
     role = models.CharField(max_length=15, blank=True, null=True)
     description = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True, blank=True, null=True)
-
+    
     class Meta:
         db_table = 'role_master'
 
 class CustomUser(AbstractUser):
-    phonenumber = models.CharField(max_length=20, blank=True, null=True)
-    mail_id = models.EmailField(max_length=50, unique=True, blank=True, null=True)
-    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE)
-
+    phonenumber = models.CharField(max_length=15, unique=True, blank=True, null=True)
+    email = models.EmailField(max_length=50, blank=True, null=True)
+    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
+    USERNAME_FIELD = 'phonenumber'
+    REQUIRED_FIELDS = []
     class Meta:
         db_table = 'custom_user'
 
@@ -46,9 +51,10 @@ class UserPersonalProfile(models.Model):
     user = models.OneToOneField(CustomUser, related_name='user', on_delete=models.CASCADE)
     age = models.IntegerField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True, null=True)
-    profile_picture = models.ImageField(upload_to='media/profile/')
+    profile_picture = JSONField(default=dict, null=True, blank=True)
     is_married = models.BooleanField(default=None, null=True, blank=True)
-    address = models.CharField(max_length=50, blank=True, null=True)
+    address = JSONField(default=dict, blank=True, null=True)
+    is_active = models.BooleanField(default=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     created_by = models.IntegerField(blank=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -60,7 +66,8 @@ class UserPersonalProfile(models.Model):
 class RoleMapping(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     role = models.ForeignKey(RoleMaster, on_delete=models.CASCADE)
-    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True, blank=True, null=True)
+    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
         db_table = 'role_mapping'
@@ -69,7 +76,7 @@ class BlockMaster(models.Model):
     block_name = models.CharField(max_length=10, null=True, blank=True)
     description = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True, blank=True, null=True)
-    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE)
+    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     created_by = models.IntegerField(blank=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -83,7 +90,7 @@ class FloorMaster(models.Model):
     description = models.CharField(max_length=100, blank=True, null=True)
     block = models.ForeignKey(BlockMaster, on_delete=models.CASCADE, related_name='block', null=True, blank=True)
     is_active = models.BooleanField(default=True, blank=True, null=True)
-    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE)
+    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     created_by = models.IntegerField(blank=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -97,7 +104,7 @@ class RoomMaster(models.Model):
     description = models.CharField(max_length=100, blank=True, null=True)
     floor = models.ForeignKey(FloorMaster, on_delete=models.CASCADE, related_name='floor', null=True, blank=True)
     is_active = models.BooleanField(default=True, blank=True, null=True)
-    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE)
+    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     created_by = models.IntegerField(blank=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -111,7 +118,8 @@ class WorkSchedules(models.Model):
     session = models.CharField(max_length=20, blank=True, null=True)
     date = models.DateField(blank=True, null=True)
     room = models.ForeignKey(RoomMaster,  on_delete=models.CASCADE, related_name='room', null=True, blank=True)
-    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE)
+    iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
+    is_active = models.BooleanField(default=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     created_by = models.IntegerField(blank=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
