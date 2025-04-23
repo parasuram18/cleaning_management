@@ -1,4 +1,4 @@
-def validate_phone(num='9345769891'):
+def validate_phone(num):
     number = num.replace(" ","")
     if not number:
         return None
@@ -15,7 +15,7 @@ def has_upper(password):
     has_capital = any(char.isupper() for char in password)
     return has_capital
 
-def is_valid_password(psword):
+def is_strong_password(psword):
     password=str(psword)
     if len(password)>=8 and has_special_char(password) and has_upper(password):
         return password

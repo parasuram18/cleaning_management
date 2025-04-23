@@ -39,16 +39,21 @@ class RoleMaster(models.Model):
         db_table = 'role_master'
 
 class CustomUser(AbstractUser):
+    username = None
     phonenumber = models.CharField(max_length=15, unique=True, blank=True, null=True)
     email = models.EmailField(max_length=50, blank=True, null=True)
     iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
+    modified_by = models.IntegerField(blank=True, null=True)
+    modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
     USERNAME_FIELD = 'phonenumber'
     REQUIRED_FIELDS = []
     class Meta:
         db_table = 'custom_user'
+    def __str__(self):
+        return str(self.phonenumber)
 
 class UserPersonalProfile(models.Model):
-    user = models.OneToOneField(CustomUser, related_name='user', on_delete=models.CASCADE)
+    user = models.OneToOneField(CustomUser, related_name='user_personal', on_delete=models.CASCADE)
     age = models.IntegerField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True, null=True)
     profile_picture = JSONField(default=dict, null=True, blank=True)
@@ -86,9 +91,9 @@ class BlockMaster(models.Model):
         db_table = 'block_master'
 
 class FloorMaster(models.Model):
-    floor_number = models.CharField(max_length=10, null=True, blank=True)
+    floor_number = models.CharField(max_length=20, null=True, blank=True)
     description = models.CharField(max_length=100, blank=True, null=True)
-    block = models.ForeignKey(BlockMaster, on_delete=models.CASCADE, related_name='block', null=True, blank=True)
+    block = models.ForeignKey(BlockMaster, on_delete=models.CASCADE, related_name='floor', null=True, blank=True)
     is_active = models.BooleanField(default=True, blank=True, null=True)
     iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -102,7 +107,7 @@ class FloorMaster(models.Model):
 class RoomMaster(models.Model):
     room_number = models.CharField(max_length=10, null=True, blank=True)
     description = models.CharField(max_length=100, blank=True, null=True)
-    floor = models.ForeignKey(FloorMaster, on_delete=models.CASCADE, related_name='floor', null=True, blank=True)
+    floor = models.ForeignKey(FloorMaster, on_delete=models.CASCADE, related_name='room', null=True, blank=True)
     is_active = models.BooleanField(default=True, blank=True, null=True)
     iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -117,7 +122,7 @@ class WorkSchedules(models.Model):
     ward_member = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     session = models.CharField(max_length=20, blank=True, null=True)
     date = models.DateField(blank=True, null=True)
-    room = models.ForeignKey(RoomMaster,  on_delete=models.CASCADE, related_name='room', null=True, blank=True)
+    room = models.ForeignKey(RoomMaster,  on_delete=models.CASCADE, related_name='schedules', null=True, blank=True)
     iu_id = models.ForeignKey(IuMaster, on_delete=models.CASCADE, blank=True, null=True)
     is_active = models.BooleanField(default=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
