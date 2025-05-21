@@ -1,0 +1,208 @@
+[
+    {
+        "0b37604ee2444f0ca7bb7cace553274b": {
+            "level": "error",
+            "exception": {
+                "values": [
+                    {
+                        "mechanism": {
+                            "type": "generic",
+                            "handled": true
+                        },
+                        "module": null,
+                        "type": "ZeroDivisionError",
+                        "value": "division by zero",
+                        "stacktrace": {
+                            "frames": [
+                                {
+                                    "filename": "members\\views.py",
+                                    "abs_path": "D:\\Parasuram\\cleaning_management\\members\\views.py",
+                                    "function": "get",
+                                    "module": "members.views",
+                                    "lineno": 716,
+                                    "pre_context": [
+                                        "            if type=='log':",
+                                        "                res = self.log()",
+                                        "            elif type=='time':",
+                                        "                res = self.profiling()",
+                                        "            else:"
+                                    ],
+                                    "context_line": "                res = self.capture_exc(str(type))",
+                                    "post_context": [
+                                        "            if CustomUser.objects.filter(phonenumber=\"+919345769198\", is_active=True).exists():",
+                                        "                objs = CustomUser.objects.filter(is_active=True)",
+                                        "            return JsonResponse({\"status\":\"success\", \"data\":res})",
+                                        "        except Exception as e:",
+                                        "            sentry_sdk.capture_exception(e)"
+                                    ],
+                                    "vars": {
+                                        "self": "<members.views.sentry_operations object at 0x00000246EB437D60>",
+                                        "request": "<rest_framework.request.Request object at 0x00000246EB37D0A0>",
+                                        "type": "'1'",
+                                        "e": "ZeroDivisionError('division by zero')"
+                                    },
+                                    "in_app": true
+                                },
+                                {
+                                    "filename": "members\\views.py",
+                                    "abs_path": "D:\\Parasuram\\cleaning_management\\members\\views.py",
+                                    "function": "capture_exc",
+                                    "module": "members.views",
+                                    "lineno": 688,
+                                    "pre_context": [
+                                        "    return render(request, 'index.html')",
+                                        "@permission_classes([AllowAny])",
+                                        "class sentry_operations(APIView):",
+                                        "    def capture_exc(self, type):",
+                                        "        if type=='1':"
+                                    ],
+                                    "context_line": "            return 1/0",
+                                    "post_context": [
+                                        "        else:",
+                                        "            return data",
+                                        "    ",
+                                        "    def log(self):",
+                                        "        sentry_sdk.capture_message(message=\"entering logging function\", level=\"info\")"
+                                    ],
+                                    "vars": {
+                                        "self": "<members.views.sentry_operations object at 0x00000246EB437D60>",
+                                        "type": "'1'"
+                                    },
+                                    "in_app": true
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "event_id": "fee5faf24e304127b17cbf3113f1f581",
+            "timestamp": "2025-05-13T05:23:44.610873Z",
+            "contexts": {
+                "trace": {
+                    "trace_id": "0b37604ee2444f0ca7bb7cace553274b",
+                    "span_id": "bf1c22249cfcabed",
+                    "parent_span_id": "b92861bb3f4084ca",
+                    "op": "view.render",
+                    "description": "sentry",
+                    "origin": "auto.http.django",
+                    "dynamic_sampling_context": {
+                        "trace_id": "0b37604ee2444f0ca7bb7cace553274b",
+                        "sample_rand": "0.463381",
+                        "environment": "development",
+                        "release": "09b2567743d399e35da245811d34f0ca857a28be",
+                        "public_key": "e83afb2c7391fa4b670f4d8d00374418",
+                        "transaction": "/user/sentry/{type}/",
+                        "sample_rate": "1.0",
+                        "sampled": "true"
+                    },
+                    "data": {
+                        "thread.id": "2616",
+                        "thread.name": "Thread-1"
+                    }
+                },
+                "runtime": {
+                    "name": "CPython",
+                    "version": "3.8.2",
+                    "build": "3.8.2 (tags/v3.8.2:7b3ab59, Feb 25 2020, 23:03:10) [MSC v.1916 64 bit (AMD64)]"
+                }
+            },
+            "transaction": "/user/sentry/{type}/",
+            "transaction_info": {
+                "source": "route"
+            },
+            "breadcrumbs": {
+                "values": [
+                    {
+                        "category": "user-action",
+                        "message": "User clicked the test button",
+                        "level": "info",
+                        "data": {
+                            "requested_by": "parasu"
+                        },
+                        "timestamp": "2025-05-13T05:23:44.609877Z",
+                        "type": "default"
+                    }
+                ]
+            },
+            "extra": {
+                "sys.argv": [
+                    ".\\manage.py",
+                    "runserver"
+                ]
+            },
+            "modules": {
+                "asgiref": "3.8.1",
+                "backports.zoneinfo": "0.2.1",
+                "certifi": "2025.4.26",
+                "charset-normalizer": "3.4.2",
+                "django": "3.0.6",
+                "djangorestframework": "3.11.0",
+                "djangorestframework-jwt": "1.11.0",
+                "djangorestframework-simplejwt": "4.4.0",
+                "idna": "3.10",
+                "pillow": "10.4.0",
+                "pip": "25.0.1",
+                "psycopg2": "2.8.6",
+                "pyjwt": "1.7.1",
+                "pytz": "2025.2",
+                "py-spy": "0.4.0",
+                "requests": "2.32.3",
+                "sentry-sdk": "2.27.0",
+                "setuptools": "41.2.0",
+                "sqlparse": "0.5.3",
+                "typing_extensions": "4.13.1",
+                "urllib3": "2.2.3"
+            },
+            "request": {
+                "url": "http://127.0.0.1:8000/user/sentry/1/",
+                "query_string": "",
+                "method": "GET",
+                "env": {
+                    "SERVER_NAME": "Parasuram",
+                    "SERVER_PORT": "8000",
+                    "REMOTE_ADDR": "127.0.0.1"
+                },
+                "headers": {
+                    "Content-Length": "",
+                    "Content-Type": "text/plain",
+                    "User-Agent": "PostmanRuntime/7.43.4",
+                    "Accept": "*/*",
+                    "Postman-Token": "8edc6d59-923e-40f5-981b-5aff286be193",
+                    "Host": "127.0.0.1:8000",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Connection": "keep-alive"
+                },
+                "cookies": {},
+                "data": {}
+            },
+            "user": {
+                "ip_address": "127.0.0.1"
+            },
+            "release": "09b2567743d399e35da245811d34f0ca857a28be",
+            "environment": "development",
+            "server_name": "Parasuram",
+            "sdk": {
+                "name": "sentry.python.django",
+                "version": "2.27.0",
+                "packages": [
+                    {
+                        "name": "pypi:sentry-sdk",
+                        "version": "2.27.0"
+                    }
+                ],
+                "integrations": [
+                    "argv",
+                    "atexit",
+                    "dedupe",
+                    "django",
+                    "excepthook",
+                    "logging",
+                    "modules",
+                    "stdlib",
+                    "threading"
+                ]
+            },
+            "platform": "python"
+        }
+    }
+]

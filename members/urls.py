@@ -11,6 +11,10 @@ urlpatterns = [
     path('details/', views.UserDetailsApi.as_view(), name='user_details'),
     path('block/', views.BlockDetailsApi.as_view(), name='blok_details'),
     path('task/', views.TaskManagementApi.as_view(), name='task_management'),
+    path('', views.index, name='index'),
+    path('sentry/<type>/', views.sentry_operations.as_view(), name='sentry'),
+    path('sentry/exc/<type>/', views.sentry_operations.as_view(), name='sentry_exc'),
+
     # path('token/', views.CustomTokenObtainPairView.as_view(), name='token'),
     # path('restjwt/', obtain_jwt_token, name='rest_jwt'),
 

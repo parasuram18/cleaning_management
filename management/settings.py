@@ -166,3 +166,54 @@ JWT_AUTH = {
     'JWT_AUTH_HEADER_PREFIX': env_data['JWT_AUTH_HEADER_PREFIX'],
 }
 
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+
+logger = LoggingIntegration(
+        level=None,
+        event_level='ERROR'
+    )
+
+# filter transactions that send to sentry
+def sampler_func(sampling_context):
+    if isinstance(sampling_context, dict):
+        for key, value in sampling_context.items():
+            print(f'{key}:{value}')
+    else:
+        print("context ---> ",sampling_context)
+    return 1
+
+SENTRY_EXC = os.path.join(BASE_DIR, 'sentry.json')
+ 
+# add transaction data to a file before send to sentry
+def before_send(event, hint):
+    f = open(SENTRY_EXC, 'r')
+    exc_list = json.load(f)
+    try:
+        trace_id = event['contexts']['trace']['trace_id']
+        exc_list.append({trace_id:event})
+        f = open(SENTRY_EXC, 'w')
+        exc_list = json.dump(exc_list, f, indent=4)
+        f.close()
+    except Exception as e:
+        print(f'error----{str(e)}')
+        pass
+    return event
+
+SENTRY_DSN = env_data.get('SENTRY_DSN')
+sentry_sdk.init(
+    dsn= None, #SENTRY_DSN,
+    integrations=[DjangoIntegration()],
+    # traces_sampler=sampler_func,
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+    environment='development',
+    profile_lifecycle='trace',
+    profiles_sample_rate=1,
+    # before_send=before_send
+    # max_breadcrumbs=200,
+    # release='cm-v1' # current version of the app,
+    # debug=True, # for debug level logging y sentry itself,
+    # ignore_errors=[ZeroDivisionError],
+)

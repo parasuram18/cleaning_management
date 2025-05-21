@@ -1,8 +1,10 @@
 from django.shortcuts import render
+from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+import sentry_sdk.logger
 from members.models import IuMaster, IuMasterProfile, CustomUser, UserPersonalProfile, RoleMaster, RoleMapping, BlockMaster, RoomMaster, FloorMaster, WorkSchedules
 from django.db import transaction
 from django.conf import settings
@@ -15,6 +17,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from members import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from members.jwt import custom_payload_handler, custom_jwt_encode_handler
+import time
+import sentry_sdk
+import requests
+
 
 @api_view(['POST'])
 def add_data(request):
@@ -225,11 +231,16 @@ class RegisterApi(APIView):
         
 @permission_classes([AllowAny, ])
 class LoginApi(APIView):
+
     def post(self, request):
         try:
             data = request.data
             phonenumber = data.get('phonenumber')
             password = data.get('password')
+            # check thirdparty api usage for sentry
+            # geocodingapi = "https://geocoding-api.open-meteo.com/v1/search?name=tenkasi&count=1"
+            # location = requests.get(geocodingapi,timeout=10).json()
+
 
             user_obj = CustomUser.objects.get(phonenumber=phonenumber)
             if not user_obj.is_active:
@@ -247,7 +258,8 @@ class LoginApi(APIView):
             return Response({"status":"error", "message":"Incorret phonenumber"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             transaction.rollback()
-            return Response({"status":"error", "message":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+            sentry_sdk.capture_exception(e)
+            return Response({"status":"error", "message":str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserDetailsApi(APIView):
 
@@ -667,4 +679,46 @@ class TaskManagementApi(APIView):
             return Response({"status":"error", "message":"something went wrong", "error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 
+def index(request):
+    return render(request, 'index.html')
+@permission_classes([AllowAny])
+class sentry_operations(APIView):
+    def capture_exc(self, type):
+        if type=='1':
+            user_obj = CustomUser.objects.filter(iu_id='1', is_active=True)
+            return 1/0
+        else:
+            return data
+    
+    def log(self):
+        sentry_sdk.capture_message(message="entering logging function", level="info")
+        return True
+    def profiling(self):
+        data = []
+        for i in range(5):
+            time.sleep(i)
+            data.append(i)
+        return data
 
+    def get(self,request, type):
+        try:
+            # user = request.user.get('id', 'Parasu')
+            sentry_sdk.add_breadcrumb(
+                category='user-action',
+                message='User clicked the test button',
+                level='info',
+                data={'requested_by':"parasu"}
+            )
+            if type=='log':
+                res = self.log()
+            elif type=='time':
+                res = self.profiling()
+            else:
+                res = self.capture_exc(str(type))
+            if CustomUser.objects.filter(phonenumber="+919345769198", is_active=True).exists():
+                objs = CustomUser.objects.filter(is_active=True)
+            return JsonResponse({"status":"success", "data":res})
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            return JsonResponse({"status":"Error", "message":str(e)})
+        
