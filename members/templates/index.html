@@ -1,0 +1,18 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sentry Test</title>
+    {% comment %} <link rel="stylesheet" href="{% static 'css/style.css' %}">  {# Optional CSS #} {% endcomment %}
+</head>
+<body>
+    <h1>Sentry Test Page</h1>
+
+    <form method="get" action="{% url 'sentry' %}">
+        {% csrf_token %}
+        <button type="submit">Trigger Error</button>
+    </form>
+</body>
+</html>
