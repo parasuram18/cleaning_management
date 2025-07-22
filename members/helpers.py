@@ -9,7 +9,7 @@ def get_iu_obj(request):
         domain = f'{scheme}://{host}/'
     except:
         domain = settings.DEV_HOST
-
+    domain = settings.DEV_HOST
     iu_obj = IuMaster.objects.get(domain_name=domain)
 
     return iu_obj

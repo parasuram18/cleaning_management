@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>dashboard</title>
+</head>
+<body>
+
+    <a href="{% url 'chatpage' '1' '2' %}"><button>Chat</button></a>
+
+    <table>
+        <tr><td>
+        <label for="user">User : </label>
+        </td>
+        <td>
+        <select id="user">
+            <option value="">Select</option>
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.name }}</option>
+            {% endfor %}
+        </select>
+        </td></tr>
+        <tr><td>
+            <label for="block">Block : </label>
+        </td>
+        <td>
+        <select id="block">
+            <option value="">Select</option>
+            {% for block in blocks  %}
+            <option value="{{ block.id }}">{{ block.block_name }}</option>
+            {% endfor %}
+        </select>
+        </td></tr>
+        <tr><td>
+        <label for="floor">Floor : </label>
+        </td>
+        <td>
+        <select id="floor">
+            <option value="">Select</option>
+            <option value="ground_floor">ground floor</option>
+            <option value="first_floor">First floor</option>
+            <option value="second_floor">Second floor</option>
+        </select>
+        </td></tr>
+        <tr><td>
+        <label for="room">Room : </label>
+        </td>
+        <td>
+        <select id="room">
+            <option value="">Select</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select>
+        </td></tr>
+        <tr><td>
+        <label for="date">Date : </label>
+        </td>
+        <td>
+        <input type="date" id="date">
+        </td></tr>
+        <tr><td>
+        <label for="session">Session : </label>
+        </td>
+        <td>
+        <select id="session">
+            <option value="">Select</option>
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="evening">Evening</option>
+        </select>
+        </td></tr>
+    </table>
+        <button onclick="send_data()">submit</button>
+
+
+    <script>
+
+        const room_name = "{{ room_name }}";
+        const socket = new WebSocket(
+            'ws://' + window.location.host + '/ws/dashboard/' + room_name + '/'
+        );
+
+
+
+        function send_data() {
+            const user = document.querySelector('#user').value;
+
+            const block = document.querySelector('#block').value;
+            const floor = document.querySelector('#floor').value;
+            const room = document.querySelector('#room').value;
+            const date = document.querySelector('#date').value;
+            const session = document.querySelector('#session').value;
+
+            const payload = {
+                user:user,
+                block:block,
+                floor:floor,
+                room:room,
+                date:date,
+                session:session,
+            };
+            console.log(payload)
+            socket.send(JSON.stringify({'payload': payload}));
+
+        }
+
+
+
+
+        function addRow() {
+        const tableBody = document.querySelector('#myTable tbody');
+        tableBody.innerHTML += `
+            <tr>
+            <td>John Doe</td>
+            <td>30</td>
+            </tr>
+        `;
+        }
+    </script>
+</body>
+
+
+</html>

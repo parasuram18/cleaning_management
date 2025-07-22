@@ -13,7 +13,8 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 import os
 import datetime
 import json
-
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,7 +52,22 @@ INSTALLED_APPS = [
     'members',
     'rest_framework',
     'rest_framework.authtoken',
+    'chat',
+    'channels'
 ]
+# for web socket support
+ASGI_APPLICATION = 'management.asgi.application'
+
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PORT = os.getenv('REDIS_PORT', env_data.get('REDIS_PORT'))
+CHANNEL_LAYERS = {
+    'default':{
+        'BACKEND':'channels_redis.core.RedisChannelLayer' ,
+        'CONFIG':{
+            "hosts":[(REDIS_HOST, REDIS_PORT)]
+        }
+    }
+}
 
 AUTH_USER_MODEL = 'members.CustomUser'
 
@@ -92,12 +108,20 @@ WSGI_APPLICATION = 'management.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env_data.get('DB_NAME'),
-        'USER':env_data.get('DB_USER'),
-        'PASSWORD':env_data.get('DB_PASSWORD'),
-        'HOST':env_data.get('DB_HOST'),
-        'PORT':env_data.get('DB_PORT'),
+        'NAME': os.getenv('DB_NAME', env_data.get('DB_NAME')),
+        'USER':os.getenv('DN_USER', env_data.get('DB_USER')),
+        'PASSWORD':os.getenv('DB_PASSWORD', env_data.get('DB_PASSWORD')),
+        'HOST':os.getenv('DB_HOST', env_data.get('DB_HOST')),
+        'PORT': os.getenv('DB_PORT', env_data.get('DB_PORT')),
     }
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'cleaning_management',
+#         'USER':'postgres',
+#         'PASSWORD':'postgres',
+#         'HOST':'host.docker.internal', #db
+#         'PORT':5432
+#     }
 }
 
 
@@ -202,18 +226,18 @@ def before_send(event, hint):
     return event
 
 SENTRY_DSN = env_data.get('SENTRY_DSN')
-sentry_sdk.init(
-    dsn= None, #SENTRY_DSN,
-    integrations=[DjangoIntegration()],
-    # traces_sampler=sampler_func,
-    traces_sample_rate=1.0,
-    send_default_pii=True,
-    environment='development',
-    profile_lifecycle='trace',
-    profiles_sample_rate=1,
-    # before_send=before_send
-    # max_breadcrumbs=200,
-    # release='cm-v1' # current version of the app,
-    # debug=True, # for debug level logging y sentry itself,
-    # ignore_errors=[ZeroDivisionError],
-)
+# sentry_sdk.init(
+#     dsn= None, #SENTRY_DSN,
+#     integrations=[DjangoIntegration()],
+#     # traces_sampler=sampler_func,
+#     traces_sample_rate=1.0,
+#     send_default_pii=True,
+#     environment='development',
+#     profile_lifecycle='trace',
+#     profiles_sample_rate=1,
+#     # before_send=before_send
+#     # max_breadcrumbs=200,
+#     # release='cm-v1' # current version of the app,
+#     # debug=True, # for debug level logging y sentry itself,
+#     # ignore_errors=[ZeroDivisionError],
+# )

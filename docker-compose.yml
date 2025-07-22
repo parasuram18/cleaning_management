@@ -1,0 +1,43 @@
+# version: "3.9"
+
+services:
+    
+  web:
+    build: .
+    # image: parasuram18/cm-image:v
+    # network_mode: "host"
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=clening_management_dev
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres 
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379  
+    # volumes:
+    #   - .:/project
+    depends_on:
+      - redis
+      - db
+
+  redis:
+    image: redis:7
+    container_name: redis-server
+    ports:
+      - "6379:6379"
+      
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=clening_management_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_new:/var/lib/postgresql/data/
+  
+volumes:
+  postgres_data_new:

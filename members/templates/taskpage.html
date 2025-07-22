@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task dashboard</title>
+    <style>
+        #main {
+            position: fixed;
+            width: 80vw;
+            left: 10vw;
+            height: 80vh;
+            top:1ovh;
+            overflow-x: hidden;
+            overflow-y: scroll;
+            border: 1px solid black;
+        }
+        #mytable {
+            width:100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        #mytable thea
+        table,tr,th,td {
+            border: 1px solid black;
+        }
+    </style>
+
+
+
+
+
+</head>
+<body>
+    <div id="main">
+    <table id="mytable">
+        <thead>
+        <tr>
+            <th>Task ID</th>
+            <th>USER</th>
+            <th>DATE</th>
+            <th>BLOCK</th>
+            <th>FLOOR</th>
+            <th>ROOM</th>
+            <th>SESSION</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+    </div>
+
+    <script>
+        const socket = new WebSocket(
+            'ws://' + window.location.host + '/ws/dashboard/'
+        );
+        socket.onmessage = function(e) {
+            const tasks = JSON.parse(e.data).task_data;
+            console.log(tasks)
+            tasks.forEach((task) => {
+                const tableBody = document.querySelector('#mytable tbody');
+                tableBody.innerHTML += `
+                    <tr>
+                    <td>${task.id}</td>
+                    <td>${task.user}</td>
+                    <td>${task.date}</td>
+                    <td>${task.block}</td>
+                    <td>${task.floor}</td>
+                    <td>${task.room}</td>
+                    <td>${task.session}</td>
+                    </tr>
+                `;
+            });
+
+        }
+    </script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+

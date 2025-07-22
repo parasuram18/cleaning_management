@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Room</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        h3 {
+            margin: 10px;
+            text-align: center;
+        }
+        #header {
+            border: 1px solid black;
+        }
+        #main {
+            position:fixed;
+            left: 35vw;
+            top: 10vh;
+            height: 80vh;
+            width: 30vw;
+            border: 1px solid black;
+        }
+        #chat-log {
+            position:relative;
+            height: 78%;
+            width: 95%;
+            left:2.5%;
+            padding: 1%;
+            border: 1px solid black;
+            overflow-x: hidden;
+            overflow-y: scroll;
+        }
+        p {
+            position:relative;
+            width: 95%;
+            left: 2.5%;
+            border: 1px solid black;
+            word-wrap: break-word;
+        }
+
+        #send-bar {
+            position: relative;
+            top: 1%;
+            left: 5%;
+            width: 90%;
+            display: flex; 
+            align-items: center;
+            gap: 10px; 
+        }
+
+        #chat-message-input {
+            border: 1px solid black;
+            border-radius: 6px;
+            padding: 5px;
+            width: 100%;
+            height: 30px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        #send-btn {
+            border: 1px solid black;
+            border-radius: 6px;
+            background-color: white;
+            height: 30px;
+            width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="main">
+        <div id="header"><h3>Chat with : {{ room_name }}</h3></div>
+        
+        <div id="chat-log">
+        </div>
+        <div id="send-bar">
+            <input id="chat-message-input" type="text">
+            <button id="send-btn" onclick="sendMessage()"><i class="material-icons">&#xe163</i></button>
+            {% comment %} <a id="send-btn" href="#" onclick="sendMessage()" ><i class="material-icons">&#xe163</i></a> {% endcomment %}
+        </div>
+    </div>
+
+    <script>
+        const roomName = "{{ room_name }}";
+        const sender = "{{ sender }}";
+        const receiver = "{{ receiver }}";
+        const socket = new WebSocket(
+            'ws://' + window.location.host + '/ws/chat/' + sender + '/' + receiver + '/'
+        );
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+
+            const p = document.createElement('p');
+            p.textContent = data.message;
+
+            if (data.is_mine) {
+                p.style.textAlign = 'right';
+            } else {
+                p.style.color = 'green';
+                p.style.textAlign = 'left';
+            }
+
+            if (data.message!='') {
+                document.querySelector('#chat-log').appendChild(p);
+            }
+        };
+
+        function sendMessage() {
+            const messageInput = document.querySelector('#chat-message-input');
+            const message = messageInput.value;
+            socket.send(JSON.stringify({'message': message}));
+            messageInput.value = '';
+        }
+    </script>
+</body>
+</html>

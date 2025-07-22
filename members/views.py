@@ -57,6 +57,7 @@ def add_data(request):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = serializers.CustomTokenObtainPairSerializer
+@permission_classes([AllowAny, ])
 
 class iu_detais(APIView):
     # to get registered company details
@@ -303,18 +304,16 @@ class UserDetailsApi(APIView):
                     }
                 else:
                     user_details = []
-                    user_list = CustomUser.objects.filter(is_active=True)
+                    user_list = CustomUser.objects.filter(is_active=True).order_by('id')
                     for user_obj in user_list:
+                        role = RoleMapping.objects.get(user_id=user_obj).role.role
                         user_personal_obj = UserPersonalProfile.objects.get(user=user_obj)
                         user_details.append({
-                            'first_name':user_obj.first_name,
-                            'last_name':user_obj.last_name,
-                            'Age':user_personal_obj.age,
-                            'Gender':user_personal_obj.gender,
-                            'Is_married':user_personal_obj.is_married,
-                            'Address':user_personal_obj.address,
+                            'id':user_obj.id,
+                            'name':f'{user_obj.first_name if user_obj.first_name else ""} {user_obj.last_name if user_obj.last_name else ""}',
                             'Email':user_obj.email,
-                            'Phone number':user_obj.phonenumber
+                            'Phone number':user_obj.phonenumber,
+                            'role':role
                         })
             return Response({"status":"success", "message":"user details fetched succesfully", "data":user_details}, status=status.HTTP_200_OK)
         
@@ -577,6 +576,9 @@ class TaskManagementApi(APIView):
             room_number = data.get('room_number')
             date = data.get('date')
             session = data.get('session')
+            if session not in ['morning', "afternoon", "evening"]:
+                return Response({"status":"error", "message":"Give a valid session..!"}, status=status.HTTP_404_NOT_FOUND)
+
             user_obj = CustomUser.objects.get(id=user_id, iu_id=iu_obj, is_active=True)
             userrole = RoleMapping.objects.get(user=user_obj).role.role
             if userrole != 'ward_member':
@@ -589,8 +591,9 @@ class TaskManagementApi(APIView):
             if is_assigned:
                 return Response({"status":"error", "message":"A worker has already been assigned to this session"})
 
-            task = WorkSchedules.objects.create(ward_member=user_obj, room=room_obj, date=date,
-                                                session=session, iu_id=iu_obj, created_by=request.user.id)
+            task = WorkSchedules(ward_member=user_obj, room=room_obj, date=date,
+                                session=session, iu_id=iu_obj, created_by=request.user.id)
+            task.save()
             return Response({"status":"success", "message":f"Task assigned to {user_obj.first_name}", "task_id":task.id})
         
         except CustomUser.DoesNotExist:
@@ -679,8 +682,8 @@ class TaskManagementApi(APIView):
             return Response({"status":"error", "message":"something went wrong", "error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 
-def index(request):
-    return render(request, 'index.html')
+def sentry_page(request):
+    return render(request, 'sentry.html')
 @permission_classes([AllowAny])
 class sentry_operations(APIView):
     def capture_exc(self, type):
@@ -688,6 +691,7 @@ class sentry_operations(APIView):
             user_obj = CustomUser.objects.filter(iu_id='1', is_active=True)
             return 1/0
         else:
+            data =''
             return data
     
     def log(self):
@@ -722,3 +726,16 @@ class sentry_operations(APIView):
             sentry_sdk.capture_exception(e)
             return JsonResponse({"status":"Error", "message":str(e)})
         
+# @login_required("login/")
+def dashboard(request):
+    data = {}
+    member = RoleMapping.objects.filter(role__role='ward_member', is_active=True)
+    users = [{'id':role.user.id,
+            'name':role.user.get_user_name().title()} for role in member]
+    data['users'] = users
+    data['blocks'] = BlockMaster.objects.filter(is_active=True)
+    data['room_name'] = 'overall_task_dashboard'
+    return render(request, 'dashboard.html', context=data)
+
+def task_details_dashboard(request):
+    return render(request, 'taskpage.html')

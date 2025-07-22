@@ -51,7 +51,8 @@ class CustomUser(AbstractUser):
         db_table = 'custom_user'
     def __str__(self):
         return str(self.phonenumber)
-
+    def get_user_name(self):
+        return f'{self.first_name if self.first_name else ""} {self.last_name if self.last_name else ""}'
 class UserPersonalProfile(models.Model):
     user = models.OneToOneField(CustomUser, related_name='user_personal', on_delete=models.CASCADE)
     age = models.IntegerField(blank=True, null=True)
@@ -67,6 +68,7 @@ class UserPersonalProfile(models.Model):
 
     class Meta:
         db_table = 'user_personal_profile'
+
 
 class RoleMapping(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -133,4 +135,35 @@ class WorkSchedules(models.Model):
     class Meta:
         db_table = 'work_schedules'
 
- 
+from .models import WorkSchedules
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+@receiver(post_save ,sender=WorkSchedules)
+def send_to_live_dashboard(sender, instance, created, **kwargs):
+    if created:
+        channel = get_channel_layer()
+        roomname = 'LiveDataDashboard'
+        payload = {
+            "id":instance.id,
+            "user": instance.ward_member.get_user_name().title(),
+            "block": instance.room.floor.block.block_name,
+            "floor": instance.room.floor.floor_number,
+            "room": instance.room.room_number,
+            "date": str(instance.date),
+            "session": instance.session
+        }
+        async_to_sync(channel.group_send)(
+            roomname,
+            {
+                "type": "send_message",
+                "task_data": [payload,],
+            }
+        )
+        print("done...")
+    else:
+        print(f"task-{instance.id} updated" )
+    if instance.is_active==False:
+        print("---Task removed---")
