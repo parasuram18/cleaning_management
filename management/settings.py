@@ -26,6 +26,13 @@ try:
 except:
     env_data = {}
 
+
+LOGSDB_NAME = os.getenv('logsdb_name', env_data.get('logsdb_name'))
+LOGSDB_USER = os.getenv('logsdb_user', env_data.get('logsdb_user'))
+LOGSDB_PASSWORD = os.getenv('logsdb_password', env_data.get('logsdb_password'))
+LOGSDB_HOST = os.getenv('logsdb_host', env_data.get('logsdb_host'))
+LOGSDB_PORT = os.getenv('logsdb_port', env_data.get('logsdb_port'))
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
@@ -35,7 +42,7 @@ SECRET_KEY = 'zyreqxad$p3dyn3^4305f&tn9eli74)g#7^8e4!8uxfru_cbg('
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 DEV_HOST = env_data.get('DEVELOMENT_HOST')
 
 
@@ -53,7 +60,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'chat',
-    'channels'
+    'channels',
+    'abdm',
+    'activity_log'
 ]
 # for web socket support
 ASGI_APPLICATION = 'management.asgi.application'
@@ -79,6 +88,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'activity_log.middleware.ActivityLogMiddleware',
 ]
 
 ROOT_URLCONF = 'management.urls'
@@ -105,6 +115,9 @@ WSGI_APPLICATION = 'management.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
+DATABASE_ROUTERS = ['activity_log.router.DatabaseAppsRouter']
+DATABASE_APPS_MAPPING = {'activity_log': 'logs'}
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -113,6 +126,14 @@ DATABASES = {
         'PASSWORD':os.getenv('DB_PASSWORD', env_data.get('DB_PASSWORD')),
         'HOST':os.getenv('DB_HOST', env_data.get('DB_HOST')),
         'PORT': os.getenv('DB_PORT', env_data.get('DB_PORT')),
+    },
+    'logs': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': LOGSDB_NAME,
+        'USER': LOGSDB_USER,
+        'PASSWORD': LOGSDB_PASSWORD,
+        'HOST': LOGSDB_HOST,
+        'PORT': LOGSDB_PORT
     }
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -124,7 +145,11 @@ DATABASES = {
 #     }
 }
 
-
+ACTIVITYLOG_AUTOCREATE_DB = False
+ACTIVITYLOG_ANONYMOUS = True
+ACTIVITYLOG_LAST_ACTIVITY = True
+ACTIVITYLOG_METHODS = ('POST', 'GET', 'PUT', 'DELETE')
+ACTIVITYLOG_EXCLUDE_URLS = ('/admin/activity_log/activitylog', '/')
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
 
