@@ -4,14 +4,15 @@ from members.jwt import custom_decode_handler
 
 def get_iu_obj(request):
     try:
-        scheme = request.META.get('wsgi.url_scheme')
-        host = request.META.get('HTTP_HOST')
+        scheme = request.scheme #META.get('wsgi.url_scheme')
+        host = request.get_host() #.META.get('HTTP_HOST')
         domain = f'{scheme}://{host}/'
     except:
         domain = settings.DEV_HOST
-    domain = settings.DEV_HOST
-    iu_obj = IuMaster.objects.get(domain_name=domain)
-
+    try:
+        iu_obj = IuMaster.objects.get(domain_name__icontains=domain)
+    except:
+        iu_obj = None
     return iu_obj
 
 def get_role_from_token(request):
