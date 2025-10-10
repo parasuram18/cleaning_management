@@ -498,9 +498,14 @@ class BlockDetailsApi(APIView):
 
 
 class TaskManagementApi(APIView):
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        self.iu_obj = get_iu_obj(request)
+
     def get(self, request):
         try:
-            iu_obj = get_iu_obj(request)
+            iu_obj = self.iu_obj #get_iu_obj(request)
             if not iu_obj:
                 return Response({"status":"error", "message":"Unauthorized domain"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -739,3 +744,50 @@ def dashboard(request):
 
 def task_details_dashboard(request):
     return render(request, 'taskpage.html')
+
+
+from django.apps import apps
+from collections import defaultdict
+import pandas as pd
+
+def get_all_models():
+    models_by_app = {}
+    overall_models = apps.get_models()
+    # for model in overall_models:
+    #     try:
+    #         models_by_app[model._meta.app_label].append(model.__name__)
+    #     except:
+    #         models_by_app[model._meta.app_label] = [model.__name__]
+
+    overall_models = {
+        model._meta.app_label : [m.__name__ for m in overall_models if m._meta.app_label == model._meta.app_label]
+        for model in overall_models
+        }
+
+    return overall_models
+
+def file_upload_view(request):
+    models = get_all_models()
+
+    context = {"models_by_app":models}
+    if request.method == 'POST':
+        data = request.POST
+        file = request.FILES['file']
+        model_data = data['model']
+
+        app_label, model_name = model_data.split('.')
+
+        target_model = apps.get_model(app_label, model_name)
+        field_names = [field.name for field in target_model._meta.fields if field.name != 'id']
+
+        print(file)
+        data_frame = pd.read_excel(file)
+        file_columns = [column.lower() for column in data_frame.columns]
+
+        if set(field_names) != set(file_columns):
+            context['message'] = f'"{model_name}" Fields and "{file}" Columns are Not matched'
+
+        else:
+            context['message'] = 'data uploaded successfully'
+
+    return render(request, 'file_form.html', context)

@@ -2,6 +2,11 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import JSONField
 
+class Base:
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.CharField(max_length=10, null=True, blank=True)
+    modified_at = models.DateTimeField(auto_now=True)
+    modified_by = models.CharField(max_length=10, null=True, blank=True)
 
 class IuMaster(models.Model):
     company_name = models.CharField(max_length=50, blank=True, null=True)

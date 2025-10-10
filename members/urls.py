@@ -16,7 +16,8 @@ urlpatterns = [
     path('sentry/exc/<type>/', views.sentry_operations.as_view(), name='sentry_exc'),
     
     path('dashboard/', views.dashboard, name='dashboard'),
-    path('task_ddashboard/', views.task_details_dashboard, name='task_ddashboard')
+    path('task_ddashboard/', views.task_details_dashboard, name='task_ddashboard'),
+    path('file_upload/',views.file_upload_view, name='upload_file_view')
 
     # path('token/', views.CustomTokenObtainPairView.as_view(), name='token'),
     # path('restjwt/', obtain_jwt_token, name='rest_jwt'),
