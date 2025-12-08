@@ -62,7 +62,8 @@ INSTALLED_APPS = [
     'chat',
     'channels',
     'abdm',
-    'activity_log'
+    'activity_log',
+    'practice'
 ]
 # for web socket support
 ASGI_APPLICATION = 'management.asgi.application'
