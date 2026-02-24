@@ -8,7 +8,7 @@ import sentry_sdk.logger
 from members.models import IuMaster, IuMasterProfile, CustomUser, UserPersonalProfile, RoleMaster, RoleMapping, BlockMaster, RoomMaster, FloorMaster, WorkSchedules
 from django.db import transaction
 from django.conf import settings
-from members.helpers import get_iu_obj, get_role_from_token
+from members.helpers import get_iu_obj, get_role_from_token, ManualCommit
 from .validators import validate_phone, is_strong_password
 from django.contrib.auth import authenticate, login
 from rest_framework.decorators import permission_classes
@@ -20,7 +20,7 @@ from members.jwt import custom_payload_handler, custom_jwt_encode_handler
 import time
 import sentry_sdk
 import requests
-
+from threading import Thread
 
 
 @api_view(['GET'])
@@ -72,15 +72,17 @@ class iu_detais(APIView):
     def get(self, request):
         try:
             company_id = request.query_params.get('id')
+
+            iu_objs = IuMaster.objects.all()
             # if request is empty raise an exception
-            if not company_id:
-                return Response({'status':'warning', "message":"Please enter id"}, status=status.HTTP_200_OK)
-            # get and return company details from IuMaster table
-            company = IuMaster.objects.get(id=company_id)
-            data = {
-                "company_name":company.company_name,
-                "domain_name":company.domain_name
-            }
+            if company_id:
+                # get and return company details from IuMaster table
+                iu_objs = iu_objs.filter(id=company_id)
+            data = [{
+                "id":obj.id,
+                "company_name":obj.company_name,
+                "domain_name":obj.domain_name
+            } for obj in iu_objs]
             return Response({"message":"details fetched succesfully", "data":data}, status=status.HTTP_200_OK)
         # if company id not exists in IuMaster raise an exception    
         except IuMaster.DoesNotExist :
@@ -105,15 +107,17 @@ class iu_detais(APIView):
             if IuMaster.objects.filter(domain_name=domain_name).exists():
                 return Response({"status":"error", "message":"Domain name already exists"}, status=status.HTTP_200_OK)
             
-            transaction.set_autocommit(False)
-            # add company details in IuMaster and IuMasterProfile tables
-            iu_obj = IuMaster.objects.create(company_name=company_name, domain_name=domain_name)
-            IuMasterProfile.objects.create(address=address, phone=phone, gst_number=gst_number, registration_date=registration_date, iu_master=iu_obj)
-            transaction.commit()
+            with transaction.atomic():
+                # add company details in IuMaster and IuMasterProfile tables
+                iu_obj = IuMaster(company_name=company_name, domain_name=domain_name)
+                iu_obj.save()
+
+                iumasterobj = IuMasterProfile(address=address, phone=phone, gst_number=gst_number, registration_date=registration_date, iu_master=iu_obj)
+                iumasterobj.save()
+
             return Response({"status":"success", "message":"details added succesfully"}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            transaction.rollback()
             return Response({'status':'Error', "message":"something went wrong", "error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
     def put(self, request):
@@ -130,27 +134,24 @@ class iu_detais(APIView):
             gst_number = data.get('gst_number')
             registration_date = data.get('registration_date')
 
-            transaction.set_autocommit(False)
-            iu_obj = IuMaster.objects.get(id=company_id)
-            iu_obj.company_name = company_name
-            iu_obj.domain_name = domain_name
-            iu_obj.save()
+            with transaction.atomic():
+                iu_obj = IuMaster.objects.get(id=company_id)
+                iu_obj.company_name = company_name
+                iu_obj.domain_name = domain_name
+                iu_obj.save()
 
-            iu_profile_obj = IuMasterProfile.objects.get(iu_master=iu_obj)
-            iu_profile_obj.address = address,
-            iu_profile_obj.phone = phone,
-            iu_profile_obj.gst_number = gst_number,
-            iu_profile_obj.registration_date = registration_date
-            iu_profile_obj.save()
+                iu_profile_obj = IuMasterProfile.objects.get(iu_master=iu_obj)
+                iu_profile_obj.address = address,
+                iu_profile_obj.phone = phone,
+                iu_profile_obj.gst_number = gst_number,
+                iu_profile_obj.registration_date = registration_date
+                iu_profile_obj.save()
                 
-            transaction.commit()
             return Response({"status":"success", "message":"details modified succesfully"}, status=status.HTTP_200_OK)
         
         except IuMaster.DoesNotExist:
-            transaction.rollback()
             return Response({"status":"warning", "message":"company does not exist"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            transaction.rollback()
             return Response({'status':'Error', "message":"something went wrong", "error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
@@ -158,25 +159,23 @@ class iu_detais(APIView):
             id = request.data.get('id')
             if not id:
                 return Response({"status":"warning", "message":"enter company id"}, status=status.HTTP_200_OK)
-            transaction.set_autocommit(False)
-            iu_obj = IuMaster.objects.get(id=id)
-            iu_obj.is_active = False
-            iu_obj.save()
+            with ManualCommit():
+                iu_obj = IuMaster.objects.get(id=id)
+                iu_obj.is_active = False
+                iu_obj.save()
 
-            iu_prfile_obj = IuMasterProfile.objects.get(iu_master=iu_obj)
-            iu_prfile_obj.is_active = False
-            iu_prfile_obj.save()
+                iu_prfile_obj = IuMasterProfile.objects.get(iu_master=iu_obj)
+                iu_prfile_obj.is_active = False
+                iu_prfile_obj.save()
 
-            transaction.commit()
             return Response({"status":"success", "message":"data deleted succesfully"}, status=status.HTTP_200_OK)
         except IuMaster.DoesNotExist:
-            transaction.rollback()
             return Response({"status":"warning", "message":"company does not exist"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            transaction.rollback()
+            import traceback
+            traceback.print_exc()
 
             return Response({'status':'Error', "message":"something went wrong", "error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
 @permission_classes([AllowAny, ])
 class RegisterApi(APIView):
     def post(self, request):
@@ -188,23 +187,23 @@ class RegisterApi(APIView):
                 return Response({"status":"error", "message":"Unauthorized domain"}, status=status.HTTP_401_UNAUTHORIZED)
             
             user_data = request.data
-            first_name = user_data.get('first_name')
-            last_name = user_data.get('last_name')
+            first_name = user_data.get('first_name', '')
+            last_name = user_data.get('last_name', '')
             phone = user_data.get('phonenumber')
             email = user_data.get('email')
             role = user_data.get('role', 'ward_member')
             password= user_data.get('password')
-            age = user_data.get('age')
-            gender = user_data.get('gender')
-            is_married = user_data.get('is_married')
-            address = user_data.get('address')
+            age = user_data.get('age', 0)
+            gender = user_data.get('gender', '')
+            is_married = user_data.get('is_married', False)
+            address = user_data.get('address', {})
 
             if user_role in ('manager', 'ward_member', None) and role in ('manager', 'admin'):
                 return Response({"status":"error", "message":"you are not allowed to perform this action"}, status=status.HTTP_401_UNAUTHORIZED)
 
             phonenumber = validate_phone(phone)
             if not phonenumber:
-                return Response({"status":"warning", "message":"Enter a valid phone number"}, status=status.HTTP_200_OK)
+                return Response({"status":"warning", "message":"Enter a valid phone number"}, status=status.HTTP_400_BAD_REQUEST)
             if CustomUser.objects.filter(phonenumber=phonenumber, is_active=True).exists():
                 return Response({"status":"warning", "message":"Phone number already exists"}, status=status.HTTP_200_OK)
 
@@ -214,27 +213,24 @@ class RegisterApi(APIView):
 
             role_obj = RoleMaster.objects.get(role=role)
             
-            transaction.set_autocommit(False)
-            user_obj = CustomUser(first_name=first_name, last_name=last_name,
-                                phonenumber=phonenumber, email=email, iu_id = iu_obj)
-            user_obj.set_password(password)
-            user_obj.save()
+            with transaction.atomic():
+                user_obj = CustomUser(first_name=first_name, last_name=last_name,
+                                    phonenumber=phonenumber, email=email, iu_id = iu_obj)
+                user_obj.set_password(password)
+                user_obj.save()
 
-            map_role = RoleMapping.objects.create(user=user_obj, role=role_obj, iu_id = iu_obj)
-            map_role.save()
+                map_role = RoleMapping.objects.create(user=user_obj, role=role_obj, iu_id = iu_obj)
+                map_role.save()
 
-            personal_obj = UserPersonalProfile(user=user_obj, age=age, gender=gender,
-                                               is_married=is_married, address=address, created_by=request.user.id)
-            personal_obj.save()
-            
-            transaction.commit()
-            return Response({"status":"success", "message":"user created succesfully", "user_id":user_obj.id}, status=status.HTTP_201_CREATED)
+                personal_obj = UserPersonalProfile(user=user_obj, age=age, gender=gender,
+                                                is_married=is_married, address=address, created_by=request.user.id)
+                personal_obj.save()
+                
+                return Response({"status":"success", "message":"user created succesfully", "user_id":user_obj.id}, status=status.HTTP_201_CREATED)
 
         except RoleMaster.DoesNotExist:
-            transaction.rollback()
             return Response({"status":"warning", "message":"Role does not exist"}, status=status.HTTP_200_OK)
         except Exception as e:
-            transaction.rollback()
             return Response({'status':'Error', "message":str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         
@@ -246,14 +242,14 @@ class LoginApi(APIView):
             data = request.data
             phonenumber = data.get('phonenumber')
             password = data.get('password')
-            # check thirdparty api usage for sentry
-            # geocodingapi = "https://geocoding-api.open-meteo.com/v1/search?name=tenkasi&count=1"
-            # location = requests.get(geocodingapi,timeout=10).json()
 
-
+            iu_obj = get_iu_obj(request)
+            if not iu_obj:
+                return Response({"status":"error", "message":"Unauthorized domain"}, status=status.HTTP_401_UNAUTHORIZED)
+            
             user_obj = CustomUser.objects.get(phonenumber=phonenumber)
             if not user_obj.is_active:
-                return Response({'status':"warning", "message":"user not found...!"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'status':"warning", "message":"You account was inactive. Please contact to the Admin...!"}, status=status.HTTP_400_BAD_REQUEST)
 
             is_valid = user_obj.check_password(password)
             
@@ -266,7 +262,6 @@ class LoginApi(APIView):
         except CustomUser.DoesNotExist:
             return Response({"status":"error", "message":"Incorret phonenumber"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            transaction.rollback()
             sentry_sdk.capture_exception(e)
             return Response({"status":"error", "message":str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -375,31 +370,28 @@ class UserDetailsApi(APIView):
             if not password:
                 return Response({"status":"warning", "message": "Enter a valid password (e.g. A@strong123)"}, status=status.HTTP_200_OK)
 
-            transaction.set_autocommit(False)
-            user_obj.first_name=first_name
-            user_obj.last_name=last_name
-            user_obj.phonenumber=phonenumber
-            user_obj.email=email
-            user_obj.iu_id = iu_obj
-            user_obj.set_password(password)
-            user_obj.modified_by=request.user.id
-            user_obj.save()
+            with transaction.atomic():
+                user_obj.first_name=first_name
+                user_obj.last_name=last_name
+                user_obj.phonenumber=phonenumber
+                user_obj.email=email
+                user_obj.iu_id = iu_obj
+                user_obj.set_password(password)
+                user_obj.modified_by=request.user.id
+                user_obj.save()
 
-            personal_obj.user=user_obj
-            personal_obj.age=age
-            personal_obj.gender=gender
-            personal_obj.is_married=is_married
-            personal_obj.address=address
-            personal_obj.modified_by=request.user.id
-            personal_obj.save()
+                personal_obj.user=user_obj
+                personal_obj.age=age
+                personal_obj.gender=gender
+                personal_obj.is_married=is_married
+                personal_obj.address=address
+                personal_obj.modified_by=request.user.id
+                personal_obj.save()
 
-            transaction.commit()
             return Response({"status":"success", "message":"user data modified succesfully"}, status=status.HTTP_200_OK)
         except CustomUser.DoesNotExist:
-            transaction.rollback()
             return Response({"status":"error", "message":"user not found..!"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            transaction.rollback()
             return Response({"status":"error", "message":"something went wrong", "error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request):
@@ -420,24 +412,21 @@ class UserDetailsApi(APIView):
             
             personal_obj = UserPersonalProfile.objects.get(user=user_obj)
 
-            transaction.set_autocommit(False)
-            user_obj.is_active = False
-            user_obj.modified_by = request.user.id
-            user_obj.save()
+            with transaction.atomic():
+                user_obj.is_active = False
+                user_obj.modified_by = request.user.id
+                user_obj.save()
 
-            personal_obj.is_active = False
-            personal_obj.modified_by = request.user.id
-            personal_obj.save()
+                personal_obj.is_active = False
+                personal_obj.modified_by = request.user.id
+                personal_obj.save()
 
-            RoleMapping.objects.filter(user=user_obj).update(is_active=False)
+                RoleMapping.objects.filter(user=user_obj).update(is_active=False)
 
-            transaction.commit()
             return Response({"status":"success", "message":"user deleted succesfully"}, status=status.HTTP_200_OK)
         except CustomUser.DoesNotExist:
-            transaction.rollback()
             return Response({"status":"error", "message":"user not found..!"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            transaction.rollback()
             return Response({"status":"error", "message":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 class BlockDetailsApi(APIView):

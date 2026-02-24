@@ -90,6 +90,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'activity_log.middleware.ActivityLogMiddleware',
+    'members.print_middleware.MonitoringMiddleware',
 ]
 
 ROOT_URLCONF = 'management.urls'

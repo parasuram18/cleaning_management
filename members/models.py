@@ -2,6 +2,24 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import JSONField
 
+from django.contrib.auth.base_user import BaseUserManager
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, phonenumber, password=None, **extra_fields):
+        if not phonenumber:
+            raise ValueError("The Phone number must be set")
+        user = self.model(phonenumber=phonenumber, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, phonenumber, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(phonenumber, password, **extra_fields)
+
+
+
 class Base:
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.CharField(max_length=10, null=True, blank=True)
@@ -44,6 +62,9 @@ class RoleMaster(models.Model):
         db_table = 'role_master'
 
 class CustomUser(AbstractUser):
+
+    # objects = CustomUserManager()
+
     username = None
     phonenumber = models.CharField(max_length=15, unique=True, blank=True, null=True)
     email = models.EmailField(max_length=50, blank=True, null=True)
